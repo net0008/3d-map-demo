@@ -1,0 +1,51 @@
+        const north = bounds.getNorth().toFixed(4);
+        const south = bounds.getSouth().toFixed(4);
+        const east = bounds.getEast().toFixed(4);
+        const west = bounds.getWest().toFixed(4);
+        
+        currentBBox = `${west}, ${south}, ${east}, ${north}`;
+        
+        coordDisplay.innerHTML = `[${currentBBox}]`;
+        coordDisplay.style.background = "#e6f4ea";
+        coordDisplay.style.borderColor = "#34a853";
+        
+        btnAdd.disabled = false;
+        btnAdd.innerHTML = "Generate 3D Model & Add to Cart";
+    });
+    // Handle map draw edited event
+    map.on(L.Draw.Event.EDITED, function (e) {
+        const layers = e.layers;
+        layers.eachLayer(function (layer) {
+            const bounds = layer.getBounds();
+            const north = bounds.getNorth().toFixed(4);
+            const south = bounds.getSouth().toFixed(4);
+            const east = bounds.getEast().toFixed(4);
+            const west = bounds.getWest().toFixed(4);
+            currentBBox = `${west}, ${south}, ${east}, ${north}`;
+            coordDisplay.innerHTML = `[${currentBBox}]`;
+        });
+    });
+    // Handle map draw deleted event
+    map.on(L.Draw.Event.DELETED, function (e) {
+        if (drawnItems.getLayers().length === 0) {
+            currentBBox = null;
+            coordDisplay.innerHTML = "Waiting for selection...";
+            coordDisplay.style.background = "#eef2f5";
+            coordDisplay.style.borderColor = "#dcdcdc";
+            btnAdd.disabled = true;
+            btnAdd.innerHTML = "Save & Add to Cart";
+        }
+    });
+    // Button click simulation
+    btnAdd.addEventListener('click', function() {
+        if(currentBBox) {
+            btnAdd.innerHTML = "Processing...";
+            setTimeout(() => {
+                alert("Shopify Integration Demo:\n\nThe coordinates [" + currentBBox + "] would now be passed to the Shopify cart as a 'Line Item Property'.\n\nThe Python backend would begin generating the STL file.");
+                btnAdd.innerHTML = "Generate 3D Model & Add to Cart";
+            }, 800);
+        }
+    });
+</script>
+</body>
+</html>
