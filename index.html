@@ -10,6 +10,7 @@
     
     <!-- Leaflet Draw CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+
     <style>
         body {
             margin: 0;
@@ -54,3 +55,175 @@
         .footer {
             padding: 15px 20px;
             background: #fafafa;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .coordinates-box {
+            font-family: monospace;
+            background: #eef2f5;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #dcdcdc;
+            color: #333;
+            font-size: 12px;
+            min-width: 200px;
+        }
+        .btn-add-to-cart {
+            background-color: #000;
+            color: #fff;
+            border: none;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-add-to-cart:hover {
+            background-color: #333;
+        }
+        .btn-add-to-cart:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .leaflet-draw-draw-polygon, .leaflet-draw-draw-polyline, .leaflet-draw-draw-circle, .leaflet-draw-draw-marker, .leaflet-draw-draw-circlemarker {
+            display: none !important; /* Only allow rectangle */
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div>
+            <h2>Select Area for 3D Print</h2>
+            <p>Use the square tool on the left to draw a bounding box.</p>
+        </div>
+    </div>
+    
+    <div id="map"></div>
+    
+    <div class="footer">
+        <div>
+            <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Selected Coordinates (BBox):</div>
+            <div class="coordinates-box" id="coord-display">Waiting for selection...</div>
+        </div>
+        <button class="btn-add-to-cart" id="btn-add" disabled>
+            Save & Add to Cart
+        </button>
+    </div>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<!-- Leaflet Draw JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+<script>
+    // Initialize map centered on the Alps (since client mentioned Alpen-Werk)
+    const map = L.map('map').setView([47.2, 11.4], 8);
+
+    // Add Topo Map layer (OpenTopoMap)
+    L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 17,
+        attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap (CC-BY-SA)'
+    }).addTo(map);
+
+    // FeatureGroup is to store editable layers
+    const drawnItems = new L.FeatureGroup();
+    map.addLayer(drawnItems);
+
+    // Initialize the draw control
+    const drawControl = new L.Control.Draw({
+        edit: {
+            featureGroup: drawnItems,
+            remove: true
+        },
+        draw: {
+            polygon: false,
+            polyline: false,
+            circle: false,
+            marker: false,
+            circlemarker: false,
+            rectangle: {
+                shapeOptions: {
+                    color: '#ff0000',
+                    weight: 2,
+                    fillOpacity: 0.1
+                }
+            }
+        }
+    });
+    map.addControl(drawControl);
+
+    const btnAdd = document.getElementById('btn-add');
+    const coordDisplay = document.getElementById('coord-display');
+    let currentBBox = null;
+
+    // Handle map draw created event
+    map.on(L.Draw.Event.CREATED, function (e) {
+        // Clear previous drawings
+        drawnItems.clearLayers();
+        
+        const layer = e.layer;
+        drawnItems.addLayer(layer);
+        
+        // Get bounds
+        const bounds = layer.getBounds();
+        const north = bounds.getNorth().toFixed(4);
+        const south = bounds.getSouth().toFixed(4);
+        const east = bounds.getEast().toFixed(4);
+        const west = bounds.getWest().toFixed(4);
+        
+        currentBBox = `${west}, ${south}, ${east}, ${north}`;
+        
+        coordDisplay.innerHTML = `[${currentBBox}]`;
+        coordDisplay.style.background = "#e6f4ea";
+        coordDisplay.style.borderColor = "#34a853";
+        
+        btnAdd.disabled = false;
+        btnAdd.innerHTML = "Generate 3D Model & Add to Cart";
+    });
+
+    // Handle map draw edited event
+    map.on(L.Draw.Event.EDITED, function (e) {
+        const layers = e.layers;
+        layers.eachLayer(function (layer) {
+            const bounds = layer.getBounds();
+            const north = bounds.getNorth().toFixed(4);
+            const south = bounds.getSouth().toFixed(4);
+            const east = bounds.getEast().toFixed(4);
+            const west = bounds.getWest().toFixed(4);
+            currentBBox = `${west}, ${south}, ${east}, ${north}`;
+            coordDisplay.innerHTML = `[${currentBBox}]`;
+        });
+    });
+
+    // Handle map draw deleted event
+    map.on(L.Draw.Event.DELETED, function (e) {
+        if (drawnItems.getLayers().length === 0) {
+            currentBBox = null;
+            coordDisplay.innerHTML = "Waiting for selection...";
+            coordDisplay.style.background = "#eef2f5";
+            coordDisplay.style.borderColor = "#dcdcdc";
+            btnAdd.disabled = true;
+            btnAdd.innerHTML = "Save & Add to Cart";
+        }
+    });
+
+    // Button click simulation
+    btnAdd.addEventListener('click', function() {
+        if(currentBBox) {
+            btnAdd.innerHTML = "Processing...";
+            setTimeout(() => {
+                alert("Shopify Integration Demo:\n\nThe coordinates [" + currentBBox + "] would now be passed to the Shopify cart as a 'Line Item Property'.\n\nThe Python backend would begin generating the STL file.");
+                btnAdd.innerHTML = "Generate 3D Model & Add to Cart";
+            }, 800);
+        }
+    });
+</script>
+
+</body>
+</html>
