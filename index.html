@@ -1,51 +1,56 @@
-        const north = bounds.getNorth().toFixed(4);
-        const south = bounds.getSouth().toFixed(4);
-        const east = bounds.getEast().toFixed(4);
-        const west = bounds.getWest().toFixed(4);
-        
-        currentBBox = `${west}, ${south}, ${east}, ${north}`;
-        
-        coordDisplay.innerHTML = `[${currentBBox}]`;
-        coordDisplay.style.background = "#e6f4ea";
-        coordDisplay.style.borderColor = "#34a853";
-        
-        btnAdd.disabled = false;
-        btnAdd.innerHTML = "Generate 3D Model & Add to Cart";
-    });
-    // Handle map draw edited event
-    map.on(L.Draw.Event.EDITED, function (e) {
-        const layers = e.layers;
-        layers.eachLayer(function (layer) {
-            const bounds = layer.getBounds();
-            const north = bounds.getNorth().toFixed(4);
-            const south = bounds.getSouth().toFixed(4);
-            const east = bounds.getEast().toFixed(4);
-            const west = bounds.getWest().toFixed(4);
-            currentBBox = `${west}, ${south}, ${east}, ${north}`;
-            coordDisplay.innerHTML = `[${currentBBox}]`;
-        });
-    });
-    // Handle map draw deleted event
-    map.on(L.Draw.Event.DELETED, function (e) {
-        if (drawnItems.getLayers().length === 0) {
-            currentBBox = null;
-            coordDisplay.innerHTML = "Waiting for selection...";
-            coordDisplay.style.background = "#eef2f5";
-            coordDisplay.style.borderColor = "#dcdcdc";
-            btnAdd.disabled = true;
-            btnAdd.innerHTML = "Save & Add to Cart";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Map Area Selector</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Leaflet Draw CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f8;
         }
-    });
-    // Button click simulation
-    btnAdd.addEventListener('click', function() {
-        if(currentBBox) {
-            btnAdd.innerHTML = "Processing...";
-            setTimeout(() => {
-                alert("Shopify Integration Demo:\n\nThe coordinates [" + currentBBox + "] would now be passed to the Shopify cart as a 'Line Item Property'.\n\nThe Python backend would begin generating the STL file.");
-                btnAdd.innerHTML = "Generate 3D Model & Add to Cart";
-            }, 800);
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background: white;
         }
-    });
-</script>
-</body>
-</html>
+        .header {
+            padding: 15px 20px;
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+        .header p {
+            margin: 5px 0 0;
+            font-size: 13px;
+            color: #666;
+        }
+        #map {
+            flex-grow: 1;
+            width: 100%;
+            z-index: 1;
+        }
+        .footer {
+            padding: 15px 20px;
+            background: #fafafa;
